@@ -45,7 +45,12 @@ def get_answer(query: str, session_id: str):
         temperature=0.0
     )
 
-    retriever = vs.as_retriever(search_kwargs={"k": 5})
+    # Use Maximum Marginal Relevance (MMR) to guarantee diversity instead of pure similarity
+    # This prevents one resume (e.g. Java) from monopolizing the top chunks and hiding others.
+    retriever = vs.as_retriever(
+        search_type="mmr", 
+        search_kwargs={"k": 8, "fetch_k": 30}
+    )
 
     # Contextualize Question
     contextualize_q_system_prompt = (

@@ -9,6 +9,7 @@ from backend.services.embeddings import get_vector_store
 import time
 
 store = {}
+response_cache = {}  # Simple in-memory cache to avoid burning API quota
 
 def get_session_history(session_id: str) -> ChatMessageHistory:
     if session_id not in store:
@@ -40,8 +41,13 @@ def get_answer(query: str, session_id: str):
     if not settings.GEMINI_API_KEY:
         return "Gemini API key is missing. Please configure your .env file.", []
         
+    # Check cache first — avoid burning API quota on repeated questions
+    cache_key = query.strip().lower()
+    if cache_key in response_cache:
+        return response_cache[cache_key]
+
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash",  # 1500 RPD free tier vs 20 RPD for gemini-3-flash
+        model="gemini-flash-latest",  # Only model available on this API key
         google_api_key=settings.GEMINI_API_KEY,
         temperature=0.0
     )
@@ -109,5 +115,7 @@ def get_answer(query: str, session_id: str):
             source = doc.metadata.get("source", "Unknown Source")
             if source not in sources:
                 sources.append(source)
-                
-    return response.get("answer", "No answer found"), sources
+
+    result = response.get("answer", "No answer found"), sources
+    response_cache[cache_key] = result  # Save to cache for future identical questions
+    return result

@@ -8,7 +8,7 @@ app = FastAPI(title="NeuroSearch AI RAG API")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allow_origins=[
+    allow_origins=[
         "http://localhost:5173",
         "http://localhost:3000",
         "https://omportfolio-umber.vercel.app",

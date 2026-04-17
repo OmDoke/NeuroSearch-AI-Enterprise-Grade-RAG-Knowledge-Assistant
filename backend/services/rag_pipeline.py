@@ -6,6 +6,7 @@ from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from backend.config import settings
 from backend.services.embeddings import get_vector_store
+import time
 
 store = {}
 
@@ -40,7 +41,7 @@ def get_answer(query: str, session_id: str):
         return "Gemini API key is missing. Please configure your .env file.", []
         
     llm = ChatGoogleGenerativeAI(
-        model="gemini-flash-latest", 
+        model="gemini-1.5-flash",  # 1500 RPD free tier vs 20 RPD for gemini-3-flash
         google_api_key=settings.GEMINI_API_KEY,
         temperature=0.0
     )
@@ -88,10 +89,19 @@ def get_answer(query: str, session_id: str):
         output_messages_key="answer",
     )
 
-    response = conversational_rag_chain.invoke(
-        {"input": query},
-        config={"configurable": {"session_id": session_id}}
-    )
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = conversational_rag_chain.invoke(
+                {"input": query},
+                config={"configurable": {"session_id": session_id}}
+            )
+            break
+        except Exception as e:
+            if "429" in str(e) and attempt < max_retries - 1:
+                time.sleep(10 * (attempt + 1))  # wait 10s, 20s before retrying
+                continue
+            raise e
     
     sources = []
     if "context" in response:

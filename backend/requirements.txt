@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+langchain
+langchain-google-genai
+pinecone-client
+langchain-pinecone
+python-dotenv
+pydantic
+python-multipart
+PyPDF2
+beautifulsoup4
+requests
